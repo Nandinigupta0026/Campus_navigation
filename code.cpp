@@ -4,7 +4,7 @@ using namespace std;
 const int n = 15; // number of vertices
 const int inf = 1e9;
 int adj[n][n]; // adjacency matrix
-
+int adj_ori[n][n];
 struct edge {
     int u, v, w, s;
 };
@@ -23,17 +23,30 @@ void matrix() {
         for (int j = 0; j < n; j++)
             adj[i][j] = (i == j) ? 0 : inf;
 
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            adj_ori[i][j] = (i == j) ? 0 : inf;
+
     edge edges[] = {
-        {1, 2, 98,0}, {2, 3, 125,1}, {3, 4, 140,1}, {4, 5, 92,1}, {5, 6, 55,0},
-        {6, 7, 132,0}, {7, 8, 447,0}, {8, 9, 370,1}, {9, 10, 125,0}, {10, 11, 250,0},
-        {2, 12, 93,0}, {3, 7, 207,0}, {4, 7, 140,0}, {9, 12, 55,1}, {12, 8, 320,0},
-        {7, 0, 300,0}, {8, 0, 294,0}, {14, 0, 700,1}, {8, 14, 600,1}, {8, 13, 590,0},
-        {11, 13, 250,0}, {13, 14, 140,0}, {8, 10, 440,1}
+        {1, 2, 98,0}, {2, 3, 125,1}, {3, 4, 140,1}, {4, 5, 92,1}, {5, 6, 55,-1},
+        {6, 7, 132,-1}, {7, 8, 447,-1}, {8, 9, 370,1}, {9, 10, 125,-1}, {10, 11, 250,-1},
+        {2, 12, 93,-1}, {3, 7, 207,-1}, {4, 7, 140,-1}, {9, 12, 55,1}, {12, 8, 320,-1},
+        {7, 0, 300,-1}, {8, 0, 294,-1}, {14, 0, 700,1}, {8, 14, 600,1}, {8, 13, 590,-1},
+        {11, 13, 250,-1}, {13, 14, 140,-1}, {8, 10, 440,1}
     };
+
+
     for (auto e : edges) {
-        adj[e.u][e.v] = e.w + e.s*300;
-        adj[e.v][e.u] = e.w - e.s*300;
+        adj[e.u][e.v] = e.w + e.s*(0.5*e.w);
+        adj[e.v][e.u] = e.w - e.s*(0.5*e.w);
     }
+
+    for (auto e : edges) {
+        adj_ori[e.u][e.v] = e.w;
+        adj_ori[e.v][e.u] = e.w;
+    }
+
+
 }
 
 // Get node number from location name
@@ -48,13 +61,15 @@ int getNode(string s) {
 // Dijkstra shortest path
 string dijkstra(int src, int dest) {
     vector<int> P, T;
-    int dist[n], parent[n];
+    int dist[n], parent[n],dist_ori[n];
     for (int i = 0; i < n; i++) {
         dist[i] = inf;
+        dist_ori[i]=inf;
         parent[i] = -1;
         if (i != src) T.push_back(i);
     }
     dist[src] = 0;
+    dist_ori[src]=0;
     P.push_back(src);
 
     while (P.back() != dest) {
@@ -62,8 +77,10 @@ string dijkstra(int src, int dest) {
         for (int v : T) {
             if (adj[last][v] != inf) {
                 int newDist = dist[last] + adj[last][v];
+                int newDist_ori = dist_ori[last] + adj_ori[last][v];
                 if (newDist < dist[v]) {
                     dist[v] = newDist;
+                    dist_ori[v]=newDist_ori;
                     parent[v] = last;
                 }
             }
@@ -94,7 +111,7 @@ string dijkstra(int src, int dest) {
         ss << "\"" << locations[path[i]] << "\"";
         if (i != path.size()-1) ss << ",";
     }
-    ss << "],\"totalDist\":" << dist[dest] << "}";
+    ss << "],\"totalDist\":" << dist_ori[dest] << "}";
     return ss.str();
 }
 
@@ -112,8 +129,8 @@ string prim() {
         int minVal = inf, minNode = -1;
         for (int node : P) {
             for (int i : T) {
-                if (adj[node][i] < minVal) {
-                    minVal = adj[node][i];
+                if (adj_ori[node][i] < minVal) {
+                    minVal = adj_ori[node][i];
                     minNode = i;
                     parent[minNode] = node;
                 }
@@ -131,8 +148,8 @@ string prim() {
     for (int i = 0; i < n; i++) {
         if (parent[i] != -1) {
             if (!first) ss << ",";
-            ss << "[\"" << locations[parent[i]] << "\",\"" << locations[i] << "\"," << adj[parent[i]][i] << "]";
-            totWeight += adj[parent[i]][i];
+            ss << "[\"" << locations[parent[i]] << "\",\"" << locations[i] << "\"," << adj_ori[parent[i]][i] << "]";
+            totWeight += adj_ori[parent[i]][i];
             first = false;
         }
     }
@@ -142,9 +159,10 @@ string prim() {
 
 int main(int argc, char* argv[]) {
     matrix();
-
+    //cout<<"Entered mian";
     // If 2 arguments provided → Dijkstra
     if (argc >= 3) {
+       // cout<<"dij";
         string start = argv[1];
         string end = argv[2];
         int src = getNode(start);
