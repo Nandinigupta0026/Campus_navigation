@@ -1,76 +1,78 @@
 const express = require('express');
 const { spawn } = require('child_process');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = 5000;
 
-// Middleware
-app.use(cors()); // Allow cross-origin requests from your frontend domain
-app.use(express.json()); // Parse JSON request bodies
+app.use(cors());
+app.use(express.json());
 
-// POST /api/dijkstra endpoint
+// ---------- DIJKSTRA ROUTE ----------
 app.post('/api/dijkstra', (req, res) => {
   const { start, end } = req.body;
+  if (!start || !end) return res.status(400).json({ error: 'Start and end required' });
 
-  if (!start || !end) {
-    return res.status(400).json({ error: 'Start and end locations are required' });
-  }
+  const cppProcess = spawn('./code.exe', [start, end]);
+  let output = '', errorOutput = '';
 
-  const cppProcess = spawn('./your_cpp_executable', [start, end]); // Adjust executable path
+  cppProcess.stdout.on('data', data => output += data.toString());
+  cppProcess.stderr.on('data', data => errorOutput += data.toString());
 
-  let output = '';
-  cppProcess.stdout.on('data', (data) => {
-    output += data.toString();
-  });
-
-  cppProcess.stderr.on('data', (data) => {
-    console.error(`stderr: ${data.toString()}`);
-  });
-
-  cppProcess.on('close', (code) => {
-    if (code !== 0) {
-      return res.status(500).json({ error: 'C++ program exited with error' });
-    }
-    try {
-      const result = JSON.parse(output);
-      res.json(result);
-    } catch (err) {
-      console.error('Failed to parse JSON output:', err);
-      res.status(500).json({ error: 'Invalid output format from C++ program' });
-    }
+  cppProcess.on('close', code => {
+    if (code !== 0) return res.status(500).json({ error: 'C++ error', details: errorOutput });
+    try { res.json(JSON.parse(output.trim())); }
+    catch { res.status(500).json({ error: 'Invalid JSON from C++', details: output }); }
   });
 });
 
-// Sample GET /api/prim endpoint (no input params)
+// ---------- PRIM ROUTE ----------
+
+
 app.get('/api/prim', (req, res) => {
-  const cppProcess = spawn('./your_cpp_prim_executable');
+  const cppProcess = spawn('./code.exe'); // no arguments → Prim
 
   let output = '';
-  cppProcess.stdout.on('data', (data) => {
-    output += data.toString();
-  });
+  let errorOutput = '';
 
-  cppProcess.stderr.on('data', (data) => {
-    console.error(`stderr: ${data.toString()}`);
-  });
+  cppProcess.stdout.on('data', data => output += data.toString());
+  cppProcess.stderr.on('data', data => errorOutput += data.toString());
 
-  cppProcess.on('close', (code) => {
+  cppProcess.on('close', code => {
     if (code !== 0) {
-      return res.status(500).json({ error: 'C++ program exited with error' });
+      return res.status(500).json({ error: 'C++ error', details: errorOutput });
     }
+
     try {
-      const result = JSON.parse(output);
-      res.json(result);
+      const edges = [];
+      let totalWeight = 0;
+
+      // Split output into lines
+      const lines = output.split('\n');
+
+      lines.forEach(line => {
+        const match = line.match(/(.+?) - (.+?) : (\d+)/);
+        if (match) {
+          const u = match[1].trim();
+          const v = match[2].trim();
+          const w = parseInt(match[3]);
+          edges.push({ u, v, w });
+          totalWeight += w;
+        }
+      });
+
+      res.json({ edges, totalWeight });
     } catch (err) {
-      console.error('Failed to parse JSON output:', err);
-      res.status(500).json({ error: 'Invalid output format from C++ program' });
+      console.error(err);
+      res.status(500).json({ error: 'Failed to parse MST output', details: output });
     }
   });
 });
 
-// You can similarly add /api/floyd endpoint
 
+
+// ---------- START SERVER ----------
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

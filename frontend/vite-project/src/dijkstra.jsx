@@ -1,36 +1,102 @@
-import React from 'react'
+import React, { useState } from 'react';
 
-const dijkstra = () => {
+const Dijkstra = () => {
+  const [source, setSource] = useState('');
+  const [destination, setDestination] = useState('');
+  const [result, setResult] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // prevent page reload
+
+    try {
+      const res = await fetch('http://localhost:5000/api/dijkstra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: source, end: destination })
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        setResult(data.error);
+      } else {
+        setResult(`Path: ${data.path.join(' -> ')}\nTotal Distance: ${data.totalDist}`);
+      }
+    } catch (err) {
+      setResult('Error connecting to server');
+      console.error(err);
+    }
+  };
+
   return (
-    <div style={{border:"2px solid black", margin:"20px", padding:"20px", borderRadius:"10px", backgroundColor:"aliceblue", width:"100%", height:"100vh", textAlign:"center", marginRight:"auto", marginLeft:"auto"}}> 
-      <h1 color='red'> Dijkstra's Algorithm  </h1>
-      <h2>Given a source and destination, this algorithm gives the minimum path from start node to end.</h2>
+    <div style={{
+      border: "2px solid black",
+      margin: "20px",
+      padding: "20px",
+      borderRadius: "10px",
+      backgroundColor: "#f0f8ff",
+      width: "80%",
+      minHeight: "80vh",
+      marginLeft: "auto",
+      marginRight: "auto",
+      textAlign: "center",
+      fontFamily: "Arial, sans-serif"
+    }}> 
+      <h1 style={{ color: '#FF4500' }}>Dijkstra's Algorithm</h1>
+      <p>Enter the source and destination nodes to find the shortest path.</p>
 
-      <br></br>
-      <br></br>
-      <form>
-       <div style={{ display: "flex", flexDirection: "row", gap: "10px"}}>
-        <label htmlFor="source" style={{ fontSize: "2rem", fontWeight: "600" }} >
-            Source Node
-        </label>
-
-        <input style={{ fontSize: "1.5rem", fontWeight: "400", borderRadius:"10px" }} type="text" name="source" id="source" placeholder="Enter source node"/>
+      <form onSubmit={handleSubmit} style={{ marginTop: "30px" }}>
+        <div style={{ marginBottom: "20px" }}>
+          <label htmlFor="source" style={{ fontSize: "1.2rem", marginRight: "10px" }}>Source Node:</label>
+          <input
+            type="text"
+            id="source"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            placeholder="Enter source node"
+            style={{ padding: "5px 10px", fontSize: "1rem", borderRadius: "5px" }}
+          />
         </div>
 
-        <br/><br/>
-        <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-        <label style={{fontSize:"2rem", fontWeight:"600"}} id="destination" >Destination Node</label>
-        <input style={{fontSize:"1.5rem", fontWeight:"400", borderRadius:"10px"}} type="text" name="destination" id="destination" placeholder='Enter destination node'/>
+        <div style={{ marginBottom: "20px" }}>
+          <label htmlFor="destination" style={{ fontSize: "1.2rem", marginRight: "10px" }}>Destination Node:</label>
+          <input
+            type="text"
+            id="destination"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="Enter destination node"
+            style={{ padding: "5px 10px", fontSize: "1rem", borderRadius: "5px" }}
+          />
         </div>
-        <br/><br/>
-        <input  style={{ fontSize: "2rem", fontWeight: "600" , borderRadius:"10px", position:"absolute", left:"10%" }} type="submit" value="Submit" />
+
+        <button type="submit" style={{
+          backgroundColor: '#32CD32',
+          color: 'white',
+          padding: "10px 20px",
+          fontSize: "1.1rem",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer"
+        }}>
+          Find Shortest Path
+        </button>
       </form>
 
-      <h2 id="dij"></h2>
-
-
+      {result && (
+        <div style={{
+          marginTop: "30px",
+          backgroundColor: "#e6f7ff",
+          padding: "15px",
+          borderRadius: "10px",
+          fontSize: "1.2rem",
+          whiteSpace: 'pre-line'
+        }}>
+          {result}
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default dijkstra
+export default Dijkstra;
