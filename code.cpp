@@ -1,15 +1,14 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int n = 15; // number of vertices
+const int n = 15; 
 const int inf = 1e9;
-int adj[n][n]; // adjacency matrix
+int adj[n][n]; 
 int adj_ori[n][n];
 struct edge {
     int u, v, w, s;
 };
 
-// Location names
 string locations[n] = {
     "GJCH", "Main gate", "Admin block", "Central avenue - first right",
     "Central avenue - second right", "Central avenue - third right", "MIG",
@@ -17,7 +16,6 @@ string locations[n] = {
     "Central avenue - first left", "CSE Dept", "Anjappar"
 };
 
-// Initialize adjacency matrix
 void matrix() {
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
@@ -49,7 +47,6 @@ void matrix() {
 
 }
 
-// Get node number from location name
 int getNode(string s) {
     for (int i = 0; i < n; i++) {
         if (locations[i] == s)
@@ -58,7 +55,7 @@ int getNode(string s) {
     return -1;
 }
 
-// Dijkstra shortest path
+
 string dijkstra(int src, int dest) {
     vector<int> P, T;
     int dist[n], parent[n],dist_ori[n];
@@ -92,7 +89,7 @@ string dijkstra(int src, int dest) {
                 minNode = v;
             }
         }
-        if (minNode == -1) break; // unreachable
+        if (minNode == -1) break; 
         P.push_back(minNode);
         T.erase(remove(T.begin(), T.end(), minNode), T.end());
     }
@@ -111,11 +108,11 @@ string dijkstra(int src, int dest) {
         ss << "\"" << locations[path[i]] << "\"";
         if (i != path.size()-1) ss << ",";
     }
-    ss << "],\"totalDist\":" << dist_ori[dest] << "}";
+    ss << "],\"totalDist\":" << dist_ori[dest] <<",\"effectiveDist\":" << dist[dest] << "}";  
     return ss.str();
 }
 
-// Prim MST
+
 string prim() {
     vector<int> P, T;
     int parent[n];
@@ -157,10 +154,50 @@ string prim() {
     return ss.str();
 }
 
+
+
+void anjappar()
+{
+    map<pair<string,int>, int> m; 
+     m[{"Prawn Masala", 250}] = 70;
+    m[{"Chicken Biriyani", 150}] = 150;
+    m[{"Naan", 65}] = 120;
+    m[{"Mushroom Masala", 180}] = 100;
+     m[{"Fish Curry", 200}] = 85;
+    m[{"French Fries", 100}] = 80;
+    m[{"Parotta", 80}] = 100;
+    m[{"Idiyappam", 80}] = 120;
+    m[{"Egg Biriyani", 100}] = 150;
+    m[{"Chicken 65", 150}] = 140;
+   
+   
+
+    cout << "{\"menu\":[";
+
+    bool first = true;
+   
+    priority_queue<pair<int, pair<string,int>>> pq;
+    for(auto &item : m) pq.push({item.second, item.first});
+
+    while(!pq.empty()) {
+        auto top = pq.top(); pq.pop();
+        if(!first) cout << ",";
+        cout << "{\"name\":\"" << top.second.first
+             << "\",\"price\":" << top.second.second
+             << ",\"sold\":" << top.first << "}";
+        first = false;
+    }
+    cout << "]}"; 
+}
+
+
 int main(int argc, char* argv[]) {
+    
+
+    //cout<<"entered main";  
     matrix();
     //cout<<"Entered mian";
-    // If 2 arguments provided → Dijkstra
+   
     if (argc >= 3) {
        // cout<<"dij";
         string start = argv[1];
@@ -172,9 +209,14 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         cout << dijkstra(src, dest) << endl;
-    } else {
-        // No arguments → output Prim MST
+    } else if(argc==1) {
+       // cout<<"prim";
+      
         cout << prim() << endl;
+    }
+    else
+    {
+        anjappar();
     }
 
     return 0;
