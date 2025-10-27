@@ -30,11 +30,52 @@ app.post('/api/dijkstra', (req, res) => {
 // ---------- PRIM ROUTE ----------
 
 
-app.get('/api/prim', (req, res) => {
-  const cppProcess = spawn('./code.exe'); // no arguments → Prim
+// app.get('/api/prim', (req, res) => {
+//   const cppProcess = spawn('./code.exe'); // no arguments → Prim
 
-  let output = '';
-  let errorOutput = '';
+//   let output = '';
+//   let errorOutput = '';
+
+//   cppProcess.stdout.on('data', data => output += data.toString());
+//   cppProcess.stderr.on('data', data => errorOutput += data.toString());
+//   console.log(output || "hiiii");
+
+//   cppProcess.on('close', code => {
+//     if (code !== 0) {
+//       return res.status(500).json({ error: 'C++ error', details: errorOutput });
+//     }
+
+//     try {
+//       console.log("Entered prim backend");
+//       const edges = [];
+//       let totalWeight = 0;
+
+//       // Split output into lines
+//       const lines = output.split('\n');
+
+//       lines.forEach(line => {
+//         const match = line.match(/(.+?) - (.+?) : (\d+)/);
+//         if (match) {
+//           const u = match[1].trim();
+//           const v = match[2].trim();
+//           const w = parseInt(match[3]);
+//           edges.push({ u, v, w });
+//           totalWeight += w;
+//           console.log("Entered at least 1 arg");
+//         }
+//       });
+
+//       res.json({ edges, totalWeight });
+//     } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ error: 'Failed to parse MST output', details: output });
+//     }
+//   });
+// });
+
+app.get('/api/prim', (req, res) => {
+  const cppProcess = spawn('./code.exe');
+  let output = '', errorOutput = '';
 
   cppProcess.stdout.on('data', data => output += data.toString());
   cppProcess.stderr.on('data', data => errorOutput += data.toString());
@@ -45,30 +86,41 @@ app.get('/api/prim', (req, res) => {
     }
 
     try {
-      const edges = [];
-      let totalWeight = 0;
-
-      // Split output into lines
-      const lines = output.split('\n');
-
-      lines.forEach(line => {
-        const match = line.match(/(.+?) - (.+?) : (\d+)/);
-        if (match) {
-          const u = match[1].trim();
-          const v = match[2].trim();
-          const w = parseInt(match[3]);
-          edges.push({ u, v, w });
-          totalWeight += w;
-        }
-      });
-
-      res.json({ edges, totalWeight });
+      // Directly parse JSON output from C++
+      const result = JSON.parse(output.trim());
+      res.json(result);
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to parse MST output', details: output });
+      console.error("Invalid JSON:", output);
+      res.status(500).json({ error: 'Invalid JSON from C++', details: output });
     }
   });
 });
+
+
+
+// ---------- ANJAPPAR ROUTE ----------
+app.get('/api/anjappar', (req, res) => {
+  const cppProcess = spawn('./code.exe', ['anjappar']);
+  let output = '', errorOutput = '';
+
+  cppProcess.stdout.on('data', data => output += data.toString());
+  cppProcess.stderr.on('data', data => errorOutput += data.toString());
+
+  cppProcess.on('close', code => {
+    if (code !== 0) 
+      return res.status(500).json({ error: 'C++ error', details: errorOutput });
+
+    try {
+      const result = JSON.parse(output.trim());
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: 'Invalid JSON from C++', details: output });
+    }
+  });
+});
+
+
+
 
 
 
